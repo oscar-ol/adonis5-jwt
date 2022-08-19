@@ -8,7 +8,7 @@ import { BaseGuard } from "@adonisjs/auth/build/src/Guards/Base";
 import { EmitterContract } from "@ioc:Adonis/Core/Event";
 import { HttpContextContract } from "@ioc:Adonis/Core/HttpContext";
 import { string } from "@poppinss/utils/build/helpers";
-import { createHash, createPrivateKey, KeyObject } from "crypto";
+import { createHash, createPrivateKey, createSecretKey, KeyObject } from "crypto";
 import { ProviderToken } from "@adonisjs/auth/build/src/Tokens/ProviderToken";
 import JwtAuthenticationException from "../Exceptions/JwtAuthenticationException";
 import {
@@ -179,7 +179,7 @@ export class JWTGuard extends BaseGuard<"jwt"> implements JWTGuardContract<any, 
             providerToken = await this.getProviderToken(token);
         }
 
-        const providerUser = await this.getUserById(payload.data!);
+        const providerUser = await this.getUserById(payload.data?.userId ?? payload.sub);
 
         /**
          * Marking user as logged in
@@ -442,6 +442,13 @@ export class JWTGuard extends BaseGuard<"jwt"> implements JWTGuardContract<any, 
     }
 
     /**
+     * Converts key string to Buffer
+     */
+    private generateSecretKey(hash: string): KeyObject {
+        return createSecretKey(Buffer.from(hash));
+    }
+
+    /**
      * Converts value to a sha256 hash
      */
     private generateHash(token: string) {
@@ -496,19 +503,19 @@ export class JWTGuard extends BaseGuard<"jwt"> implements JWTGuardContract<any, 
      * Verify the token received in the request.
      */
     private async verifyToken(token: string): Promise<JWTCustomPayload> {
-        const secret = this.generateKey(this.config.privateKey);
+        const secret =
+            this.config.keyType === "private"
+                ? this.generateKey(this.config.privateKey)
+                : this.generateSecretKey(this.config.secretKey);
 
         const { payload } = await jwtVerify(token, secret, {
             issuer: this.config.issuer,
             audience: this.config.audience,
         });
 
-        const { data, exp }: JWTCustomPayload = payload;
+        const { data, exp, sub }: JWTCustomPayload = payload;
 
-        if (!data) {
-            throw new JwtAuthenticationException("Invalid JWT payload");
-        }
-        if (!data.userId) {
+        if (!data.userId && !sub) {
             throw new JwtAuthenticationException("Invalid JWT payload: missing userId");
         }
         if (exp && exp < Math.floor(DateTime.now().toSeconds())) {
@@ -534,8 +541,8 @@ export class JWTGuard extends BaseGuard<"jwt"> implements JWTGuardContract<any, 
     /**
      * Returns user from the user session id
      */
-    private async getUserById(payloadData: JWTCustomPayloadData) {
-        const authenticatable = await this.provider.findById(payloadData.userId);
+    private async getUserById(id: number) {
+        const authenticatable = await this.provider.findById(id);
 
         if (!authenticatable.user) {
             throw new JwtAuthenticationException("No user found from payload");

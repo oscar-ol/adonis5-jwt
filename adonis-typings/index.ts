@@ -56,6 +56,11 @@ declare module "@ioc:Adonis/Addons/Jwt" {
         audience?: string;
 
         /**
+         * Key type to sign the token
+         */
+        keyType: string;
+
+        /**
          * Public key to sign the token
          */
         publicKey: string;
@@ -64,6 +69,11 @@ declare module "@ioc:Adonis/Addons/Jwt" {
          * Private key to sign the token
          */
         privateKey: string;
+        
+        /**
+         * Secret key to sign the token
+         */
+        secretKey: string;
 
         /**
          * Whether this guard should store the JWT in the selected tokenProvider.

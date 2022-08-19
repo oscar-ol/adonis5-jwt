@@ -342,8 +342,10 @@ async function editConfig(
         name: "jwt",
         initializer: Writers.object({
             driver: '"jwt"',
+            keyType: `Env.get('JWT_KEY_TYPE', 'private')`,
             publicKey: `Env.get('JWT_PUBLIC_KEY', '').replace(/\\\\n/g, '\\n')`,
             privateKey: `Env.get('JWT_PRIVATE_KEY', '').replace(/\\\\n/g, '\\n')`,
+            secretKey: `Env.get('JWT_SECRET_KEY', '')`,
             persistJwt: `${state.persistJwt ? "true" : "false"}`,
             jwtDefaultExpire: `'${state.jwtDefaultExpire}'`,
             refreshTokenDefaultExpire: `'${state.refreshTokenDefaultExpire}'`,
