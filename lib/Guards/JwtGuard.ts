@@ -515,7 +515,7 @@ export class JWTGuard extends BaseGuard<"jwt"> implements JWTGuardContract<any, 
 
         const { data, exp, sub }: JWTCustomPayload = payload;
 
-        if (!data.userId && !sub) {
+        if (!data?.userId && !sub) {
             throw new JwtAuthenticationException("Invalid JWT payload: missing userId");
         }
         if (exp && exp < Math.floor(DateTime.now().toSeconds())) {
